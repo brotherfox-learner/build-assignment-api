@@ -15,12 +15,27 @@ app.get("/users", async (req, res) => {
 });
 
 app.post("/assignments", async (req, res) => {
-  // 1. รับข้อมูลจากผู้ใช้งาน
-  const newUser = { ...req.body, created_at: new Date(), updated_at: new Date(), published_at: new Date() };
-  // 2. บันทึกข้อมูลลงฐานข้อมูล
-  await connectionPool.query("INSERT INTO assignments (title, content, category) VALUES ($1, $2, $3)", [newUser.title, newUser.content, newUser.category]);
+  try {
+    const { title, content, category } = req.body;
+      // 1. ทำการ Validate ข้อมูลที่ส่งมาจากผู้ใช้งาน
+    if (!title || !content || !category) {
+      return res.status(400).json({
+        "message": "Server could not create assignment because there are missing data from client" ,
+      });
+    }
+
+    // 2. ทำการ Insert ข้อมูลลงฐานข้อมูล
+    const result = await connectionPool.query(
+      `INSERT INTO assignments (title, content, category)
+       VALUES ($1, $2, $3)
+       RETURNING assignment_id, title, content, category`,
+      [title, content, category]
+    );
   // 3. ส่งข้อมูลกลับไปยังผู้ใช้งาน
-  return res.status(201).json({ "message": "Created assignment successfully", "data": newUser });
+  return res.status(201).json({ "message": "Created assignment successfully", "data": result.rows[0] });
+  } catch (error) {
+    return res.status(500).json({ "message": "Server could not create assignment because database connection" });
+  }
 });
 
 app.listen(port, () => {
