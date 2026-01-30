@@ -1,9 +1,20 @@
 import express from "express";
 import connectionPool from "./utils/db.mjs";
-
+import cors from "cors";
 const app = express();
-const port = 4001;
+const PORT = process.env.PORT || 4000;
+
 app.use(express.json());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // Frontend local (Vite)
+      "http://localhost:3000", // Frontend local (React แบบอื่น)
+      "https://your-frontend.vercel.app", // Frontend ที่ Deploy แล้ว
+      // ✅ ให้เปลี่ยน https://your-frontend.vercel.app เป็น URL จริงของ Frontend ที่ deploy แล้ว
+    ],
+  })
+);
 
 app.get("/test", (req, res) => {
   return res.json("Server API is working 🚀");
@@ -12,6 +23,10 @@ app.get("/test", (req, res) => {
 app.get("/users", async (req, res) => {
   const users = await connectionPool.query("SELECT * FROM users");
   return res.json(users.rows);
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "OK" });
 });
 
 app.post("/assignments", async (req, res) => {
@@ -39,6 +54,6 @@ app.post("/assignments", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server is running at ${PORT}`);
 });
